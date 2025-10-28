@@ -1,49 +1,32 @@
 <?php
+// app/Http/Controllers/Api/Admin/FacultyController.php
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Models\Faculty;
 use Illuminate\Http\Request;
 
-class FacultyController
+class FacultyController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * HIỂN THỊ: Lấy danh sách Khoa (phân trang, tìm kiếm)
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $faculties = Faculty::search($request->search)
+            ->paginate(15);
+
+        return response()->json($faculties);
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
+     * HIỂN THỊ: Lấy chi tiết 1 Khoa
      */
     public function show(Faculty $faculty)
     {
-        //
+        return response()->json($faculty->load(['classes', 'users']));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Faculty $faculty)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Faculty $faculty)
-    {
-        //
-    }
+    // --- Các phương thức thêm/sửa/xóa đã bị loại bỏ ---
 }
