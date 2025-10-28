@@ -1,38 +1,24 @@
 <?php
 
-namespace App\Models;
+namespace App\Models; // Sửa namespace thành App\Models
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-// 1. LỖI NGHIÊM TRỌNG: Phải dùng 'Authenticatable', không phải 'Model'
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Model; // <-- Kế thừa từ Model là đủ
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Notifications\Notifiable; // Thêm trait Notifiable tiêu chuẩn
-use Laravel\Sanctum\HasApiTokens; // 2. LỖI NGHIÊM TRỌNG: Thiếu trait này
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\DB; // Vẫn cần DB facade cho computePermissionsMap
 
-
-class User extends Authenticatable // <-- SỬA Ở ĐÂY
+class User extends Model // <-- Chỉ cần kế thừa Model
 {
-    // 3. THÊM 2 TRAITS QUAN TRỌNG
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, SoftDeletes; // Bỏ Notifiable, HasApiTokens
 
-    /**
-     * Tên bảng.
-     */
     protected $table = 'users';
-
-    /**
-     * Tên khóa chính (Đã đúng).
-     */
     protected $primaryKey = 'user_id';
 
-    /**
-     * Các trường được phép gán (Đã đúng).
-     */
+    // Bỏ các trường liên quan đến password, token
+    // Bỏ luôn user_username nếu không cần thiết cho việc hiển thị/tìm kiếm
     protected $fillable = [
-        // Thông tin cá nhân
         'user_student_code',
         'user_full_name',
         'user_first_name',
@@ -40,117 +26,170 @@ class User extends Authenticatable // <-- SỬA Ở ĐÂY
         'user_gender',
         'user_date_of_birth',
         'user_avatar',
-        // Thông tin liên hệ
         'user_email',
         'user_phone_number',
         'user_address',
         'user_city',
         'user_country',
-        // Thông tin học vụ
         'user_student_id_card',
         'user_faculty_id',
         'user_class_id',
         'user_major',
         'user_course_year',
-        'user_status', // Cột enum('Đang học', 'Bỏ Học', 'Tạm nghỉ')
-        // Thông tin đăng nhập
-        'user_username',
-        'user_password',
-        'user_email_verified_at',
-        'user_last_login_at',
-        'user_is_active',
-        // Thông tin bổ sung
-        'user_social_id',
+        'user_status', // Cột enum('Đang học', 'Bỏ Học', 'Tạm nghỉ') từ migration gốc
+        'user_is_active', // Vẫn giữ để biết user có bị khóa không (từ API gốc)
         'user_emergency_contact_name',
         'user_emergency_contact_phone',
         'user_note',
-        // Trường chung
-        'status', // Cột tinyInteger (0, 1, 2...)
+        'status', // Cột tinyInteger (0, 1, 2...) từ migration chung
         'sequence',
         'version',
-        'created_user_id',
-        'updated_user_id'
+        'created_user_id', // Giữ lại nếu bạn muốn biết ai đồng bộ/tạo record này
+        'updated_user_id', // Giữ lại nếu bạn muốn biết ai cập nhật record này
+        // 'user_username', // Chỉ thêm nếu API public trả về và bạn cần dùng
     ];
 
-    /**
-     * Các trường ẩn khi trả về JSON (Đã đúng).
-     */
+    // Bỏ hidden password, token
     protected $hidden = [
-        'user_password',
-        'user_remember_token',
+        // Không cần ẩn gì đặc biệt ở đây nữa
     ];
 
-    /**
-     * Ép kiểu (Đã đúng).
-     */
+    // Bỏ các cast liên quan đến xác thực/đăng nhập
     protected $casts = [
-        'user_email_verified_at' => 'datetime',
-        'user_last_login_at' => 'datetime',
         'user_date_of_birth' => 'date',
         'user_is_active' => 'boolean',
+        // 'user_email_verified_at' => 'datetime', // Chỉ giữ nếu API public trả về
+        // 'user_last_login_at' => 'datetime', // Chỉ giữ nếu API public trả về
     ];
 
-    /**
-     * Lấy cột mật khẩu (Đã đúng).
-     * BẮT BUỘC vì bạn dùng 'user_password'.
-     */
-    public function getAuthPassword()
-    {
-        return $this->user_password;
-    }
+    // --- CÁC QUAN HỆ (Vẫn giữ nguyên) ---
 
-    // --- CÁC QUAN HỆ ---
-
-    /**
-     * Quan hệ (N-1) với Faculty (Khoa).
-     * Giả định Model 'Faculty' tồn tại.
-     */
     public function faculty(): BelongsTo
     {
-        return $this->belongsTo(Faculty::class, 'user_faculty_id', 'faculty_id');
+        // Giả định Model Faculty tồn tại trong App\Models
+        return $this->belongsTo(\App\Models\Faculty::class, 'user_faculty_id', 'faculty_id');
     }
 
-    /**
-     * Quan hệ (N-1) với Class (Lớp).
-     * Giả định Model 'ClassModel' tồn tại.
-     */
     public function class(): BelongsTo
     {
-        return $this->belongsTo(ClassModel::class, 'user_class_id', 'class_id');
+        // Giả định Model ClassModel tồn tại trong App\Models
+        return $this->belongsTo(\App\Models\ClassModel::class, 'user_class_id', 'class_id');
     }
 
     /**
-     * Quan hệ (N-N) với Role (Vai trò).
-     * Đây là quan hệ chính để kiểm tra vai trò.
+     * Quan hệ này RẤT QUAN TRỌNG để liên kết với hệ thống phân quyền CỦA BẠN
      */
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id')
+        // Giả định Model Role tồn tại trong App\Models
+        return $this->belongsToMany(\App\Models\Role::class, 'user_roles', 'user_id', 'role_id')
                     ->withTimestamps()
-                    // Thêm các trường chung của bảng pivot nếu bạn cần truy cập
-                    ->withPivot('status', 'created_user_id', 'updated_user_id');
+                    // Lấy các trường chung từ bảng pivot user_roles
+                    ->withPivot('status', 'created_user_id', 'updated_user_id', 'deleted_at');
     }
 
-    /*
-     * 4. GHI CHÚ:
-     * Hai hàm 'userRoles()' và 'hasPermission()' của bạn không cần thiết
-     * và không phù hợp với logic 6 bảng mà chúng ta đã thiết kế.
-     *
-     * - 'userRoles()': Bị thừa vì đã có 'roles()' mạnh hơn.
-     * - 'hasPermission()': Logic kiểm tra quyền sẽ nằm trong
-     * Controller (hàm computePermissions) và Middleware (screen.can).
-     * Xóa bỏ 2 hàm đó sẽ giúp code sạch hơn.
+    // --- HÀM TÍNH TOÁN QUYỀN (Vẫn giữ nguyên logic query 6 bảng) ---
+
+    /**
+     * Tính toán map quyền dựa trên các role được gán TRONG DATABASE CỦA BẠN.
+     * @return array
      */
+    public function computePermissionsMap(): array
+    {
+        // Kiểm tra xem quan hệ 'roles' có tồn tại không
+        if (!method_exists($this, 'roles')) {
+            return [];
+        }
 
-    // --- CÁC SCOPE (Đã đúng) ---
+        // Lấy ID các role gắn với user này (từ bảng user_roles CỦA BẠN)
+        $roleIds = $this->roles()->pluck('roles.id')->toArray();
 
+        if (empty($roleIds)) {
+            return []; // User này không có role nào được gán trong hệ thống của bạn
+        }
+
+        // Logic này query các bảng phân quyền (role_permissions, permissions_screens, screens)
+        // để xây dựng map quyền cho user dựa trên các role họ có (trong DB của bạn)
+        $rows = DB::table('roles')
+            // 1. Từ Role -> role_permissions (để lấy permission_id)
+            ->join('role_permissions', 'roles.id', '=', 'role_permissions.role_id')
+            // 2. Từ role_permissions -> permissions_screens (dùng chung permission_id)
+            ->join('permissions_screens', 'role_permissions.permission_id', '=', 'permissions_screens.permission_id')
+            // 3. Từ permissions_screens -> screens (để lấy screen_code)
+            ->join('screens', 'permissions_screens.screen_id', '=', 'screens.id')
+            // Chỉ lấy các quyền của các role mà user này có
+            ->whereIn('roles.id', $roleIds)
+             // Lọc thêm các bản ghi không bị soft delete trong bảng pivot (nếu cần)
+            ->whereNull('role_permissions.deleted_at') 
+            ->whereNull('permissions_screens.deleted_at')
+            ->select(
+                'screens.screen_code',
+                'permissions_screens.is_view',
+                'permissions_screens.is_add',
+                'permissions_screens.is_edit',
+                'permissions_screens.is_delete',
+                'permissions_screens.is_scan', // Giữ lại quyền tùy chỉnh của bạn
+                'permissions_screens.is_all'
+            )
+            ->distinct() // Lấy các quyền duy nhất cho từng màn hình
+            ->get();
+
+        $map = [];
+        foreach ($rows as $r) {
+            $screenCode = $r->screen_code;
+            if (!isset($map[$screenCode])) {
+                // Khởi tạo map cho màn hình này
+                $map[$screenCode] = [
+                    'is_view' => false, 'is_add' => false, 'is_edit' => false,
+                    'is_delete' => false, 'is_scan' => false, 'is_all' => false,
+                ];
+            }
+            // Gộp quyền (logic OR)
+            // Nếu MỘT trong các role có quyền true, thì user sẽ có quyền true
+            $map[$screenCode]['is_view'] = $map[$screenCode]['is_view'] || (bool)$r->is_view;
+            $map[$screenCode]['is_add'] = $map[$screenCode]['is_add'] || (bool)$r->is_add;
+            $map[$screenCode]['is_edit'] = $map[$screenCode]['is_edit'] || (bool)$r->is_edit;
+            $map[$screenCode]['is_delete'] = $map[$screenCode]['is_delete'] || (bool)$r->is_delete;
+            $map[$screenCode]['is_scan'] = $map[$screenCode]['is_scan'] || (bool)$r->is_scan;
+            $map[$screenCode]['is_all'] = $map[$screenCode]['is_all'] || (bool)$r->is_all;
+        }
+        return $map;
+    }
+
+
+    // --- CÁC SCOPE (Để lấy/lọc dữ liệu) ---
+
+    /**
+     * (Logic) Scope tìm kiếm user dựa trên tên, email, mã SV.
+     */
+    public function scopeSearch($query, $term)
+    {
+        if ($term) {
+            // Bao trong closure để nhóm các điều kiện OR lại
+            return $query->where(function ($q) use ($term) {
+                $q->where('user_full_name', 'like', '%' . $term . '%')
+                  ->orWhere('user_email', 'like', '%' . $term . '%')
+                  ->orWhere('user_student_code', 'like', '%' . $term . '%');
+            });
+        }
+        // Nếu không có term, không làm gì cả
+        return $query;
+    }
+
+    /**
+     * Scope để lọc user theo khoa.
+     */
     public function scopeByFaculty($query, $facultyId)
     {
         return $query->where('user_faculty_id', $facultyId);
     }
 
+    /**
+     * Scope để lọc user theo lớp.
+     */
     public function scopeByClass($query, $classId)
     {
         return $query->where('user_class_id', $classId);
     }
 }
+

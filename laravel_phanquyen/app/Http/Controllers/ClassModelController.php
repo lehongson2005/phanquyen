@@ -1,49 +1,32 @@
 <?php
+// app/Http/Controllers/ClassController.php
 
 namespace App\Http\Controllers;
 
 use App\Models\ClassModel;
 use Illuminate\Http\Request;
 
-class ClassModelController
+class ClassController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Hiển thị danh sách lớp, có thể tìm kiếm theo term
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $term = $request->input('search');
+        $classes = ClassModel::search($term)
+            ->orderBy('class_name')
+            ->get();
+
+        return response()->json($classes);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Hiển thị chi tiết 1 lớp
      */
-    public function store(Request $request)
+    public function show($id)
     {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(ClassModel $classModel)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, ClassModel $classModel)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(ClassModel $classModel)
-    {
-        //
+        $class = ClassModel::findOrFail($id);
+        return response()->json($class);
     }
 }
