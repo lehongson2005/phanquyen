@@ -16,10 +16,10 @@ class DatabaseSeeder extends Seeder
             ScreenSeeder::class,
 
             // Dữ liệu phụ thuộc
-            ClassSeeder::class, // Phụ thuộc vào Faculty
-            UserSeeder::class,    // Phụ thuộc vào Faculty, Class
+            ClassSeeder::class, // Phải chạy sau FacultySeeder
+            UserSeeder::class,    // Phải chạy sau FacultySeeder và ClassSeeder
 
-            // Dữ liệu quan hệ (bảng trung gian)
+            // Dữ liệu quan hệ (bảng trung gian) - chạy cuối cùng
             UserRoleSeeder::class,
             RolePermissionSeeder::class,
             PermissionScreenSeeder::class,

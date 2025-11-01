@@ -12,32 +12,40 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Lấy faculty và class mẫu
-        $faculty = Faculty::first();
-        $class = ClassModel::first();
+        $this->command->info('Running UserSeeder...');
 
-        // Tạo admin user
+        $faculty = Faculty::first() ?? Faculty::factory()->create();
+        $class = ClassModel::first() ?? ClassModel::factory()->create(['class_faculty_id' => $faculty->faculty_id]);
+
         User::firstOrCreate(
             ['user_email' => 'admin@gmail.com'],
             [
                 'user_student_code' => 'ADMIN01',
                 'user_full_name' => 'Adminstrator',
-                'user_gender' => 'Nam',
-                'user_date_of_birth' => '2000-01-01',
-                'user_faculty_id' => $faculty?->faculty_id,
-                'user_class_id' => $class?->class_id,
+                'user_faculty_id' => $faculty->faculty_id,
+                'user_class_id' => $class->class_id,
                 'user_major' => 'System Admin',
                 'user_course_year' => '2020',
                 'user_username' => 'admin',
                 'user_password' => Hash::make('123456'),
-                'user_is_active' => true,
             ]
         );
 
-        // Tạo 10 user sinh viên mẫu
-        User::factory(10)->create([
-            'user_faculty_id' => $faculty?->faculty_id,
-            'user_class_id' => $class?->class_id,
-        ]);
+        User::where('user_email', '!=', 'admin@gmail.com')->delete();
+        $this->command->info('==> Deleted old student users.');
+
+        $this->command->info('==> Preparing 100 new student records from your factory...');
+        $users = [];
+
+        for ($i = 0; $i < 100; $i++) {
+            $users[] = User::factory()->definition();
+        }
+
+        $this->command->info('==> Bulk inserting 100 records...');
+        foreach (array_chunk($users, 50) as $chunk) {
+            User::insert($chunk);
+        }
+
+        $this->command->info('UserSeeder finished successfully.');
     }
 }
