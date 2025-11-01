@@ -7,17 +7,12 @@ use Illuminate\Database\Seeder;
 
 class ScreenSeeder extends Seeder
 {
-    /**
-     * Tạo dữ liệu mẫu cho bảng screens bằng tiếng Việt.
-     *
-     * @return void
-     */
-    public function run()
+    public function run(): void
     {
-        // Tạo 20 bản ghi mẫu
-        Screen::factory()->count(20)->create();
-
-        // Thông báo hoàn thành
-        echo "Đã tạo 20 bản ghi mẫu cho bảng screens bằng tiếng Việt.\n";
+        Screen::firstOrCreate(['screen_code' => 'DASHBOARD'], ['screen_name' => 'Bảng điều khiển']);
+        Screen::firstOrCreate(['screen_code' => 'USER_MANAGEMENT'], ['screen_name' => 'Quản lý Người dùng']);
+        Screen::firstOrCreate(['screen_code' => 'ROLE_MANAGEMENT'], ['screen_name' => 'Quản lý Vai trò']);
+        Screen::firstOrCreate(['screen_code' => 'FACULTY_MANAGEMENT'], ['screen_name' => 'Quản lý Khoa']);
+        Screen::firstOrCreate(['screen_code' => 'CLASS_MANAGEMENT'], ['screen_name' => 'Quản lý Lớp học']);
     }
 }
