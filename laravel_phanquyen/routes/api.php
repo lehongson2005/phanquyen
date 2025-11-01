@@ -2,7 +2,14 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController; // <--- Cần 'use' controller
+
+// Import tất cả các controller trong namespace Api
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\FacultyController;
+use App\Http\Controllers\Api\ClassController;
+use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\ScreenController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,18 +26,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// --- CÁC ROUTE CỦA BẠN CHO USER ---
-
-// (Giả sử các route này cũng cần xác thực, ví dụ 'auth:sanctum')
-// Hoặc bạn có thể bọc chúng trong một group middleware
-// Route::middleware(['auth:sanctum'])->group(function () {
-
-    Route::get('/users', [UserController::class, 'index'])
-         ->middleware('screen.can:user.manage,is_view') // BẢO VỆ ROUTE
-         ->name('api.users.index'); // Đặt tên có tiền tố 'api.' là một thói quen tốt
-
-    Route::get('/users/{user}', [UserController::class, 'show'])
-         ->middleware('screen.can:user.manage,is_view') // BẢO VỆ ROUTE
-         ->name('api.users.show');
-
-// }); // Đóng group middleware
+// API Endpoints để lấy danh sách
+Route::get('/users', [UserController::class, 'index']);
+Route::get('/faculties', [FacultyController::class, 'index']);
+Route::get('/classes', [ClassController::class, 'index']);
+Route::get('/roles', [RoleController::class, 'index']);
+Route::get('/permissions', [PermissionController::class, 'index']);
+Route::get('/screens', [ScreenController::class, 'index']);
