@@ -29,7 +29,7 @@ RUN composer install --no-interaction --prefer-dist --no-scripts
 
 COPY . .
 
-RUN composer dump-autoload --optimize --no-dev
+RUN composer dump-autoload --optimize
 
 # Set quyền cho thư mục storage và bootstrap/cache
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
